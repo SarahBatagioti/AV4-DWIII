@@ -175,6 +175,23 @@ class SegurancaIntegracaoTest {
 	}
 
 	@Test
+	void gerenteDeveCadastrarMercadoriaComDatasIso8601() throws Exception {
+		String payload = """
+				{
+				  "nome": "Filtro de cabine",
+				  "quantidade": 3,
+				  "valor": 49.9,
+				  "fabricao": "2026-05-23T10:15:30Z",
+				  "validade": "2027-05-23"
+				}
+				""";
+
+		mockMvc.perform(post("/empresas/" + empresa.getId() + "/mercadorias")
+				.header("Authorization", token("gerente", "senha123")).contentType(MediaType.APPLICATION_JSON)
+				.content(payload)).andExpect(status().isCreated());
+	}
+
+	@Test
 	void vendedorDeveLerMercadoriasMasNaoCadastrar() throws Exception {
 		Map<String, Object> payload = Map.of("nome", "Pastilha", "quantidade", 2, "valor", 89.9, "fabricao",
 				new Date().getTime(), "validade", new Date(System.currentTimeMillis() + 86400000L).getTime());

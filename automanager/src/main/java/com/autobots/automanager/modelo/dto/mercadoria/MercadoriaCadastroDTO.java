@@ -5,13 +5,18 @@ import java.util.Date;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
+import com.autobots.automanager.configuracao.DesserializadorDataFlexivel;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
 import lombok.Data;
 
 @Data
 public class MercadoriaCadastroDTO {
 	@NotNull(message = "validade deve ser informada")
+	@JsonDeserialize(using = DesserializadorDataFlexivel.class)
 	private Date validade;
 	@NotNull(message = "fabricao deve ser informada")
+	@JsonDeserialize(using = DesserializadorDataFlexivel.class)
 	private Date fabricao;
 	@NotBlank(message = "nome deve ser informado")
 	private String nome;
