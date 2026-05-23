@@ -285,6 +285,11 @@ public class SuporteDominioServico {
 		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.ADMINISTRADOR)) {
 			return;
 		}
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.CLIENTE)
+				&& venda.getCliente() != null
+				&& usuarioAutenticado.getId().equals(venda.getCliente().getId())) {
+			return;
+		}
 		validarEmpresaDoUsuarioAutenticado(venda.getEmpresa().getId());
 		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.GERENTE)) {
 			return;
@@ -292,11 +297,6 @@ public class SuporteDominioServico {
 		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.VENDEDOR)
 				&& venda.getFuncionario() != null
 				&& usuarioAutenticado.getId().equals(venda.getFuncionario().getId())) {
-			return;
-		}
-		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.CLIENTE)
-				&& venda.getCliente() != null
-				&& usuarioAutenticado.getId().equals(venda.getCliente().getId())) {
 			return;
 		}
 		throw new AccessDeniedException("Usuário autenticado não pode acessar a venda informada");
