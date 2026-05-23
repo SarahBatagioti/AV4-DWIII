@@ -5,6 +5,7 @@ Este guia reflete a API atual da ATVIII. Os exemplos abaixo usam `http://localho
 ## Convencoes adotadas
 
 - Cabecalho sugerido: `Content-Type: application/json`
+- Rotas protegidas exigem `Authorization: Bearer <token>`
 - Datas podem ser enviadas no formato ISO-8601
 - Respostas de `GET`, `POST` e `PUT` retornam `_links`
 - Respostas de `DELETE` retornam `204 No Content`
@@ -12,11 +13,38 @@ Este guia reflete a API atual da ATVIII. Os exemplos abaixo usam `http://localho
 
 ## Fluxo-base recomendado
 
-1. Cadastrar uma empresa
-2. Cadastrar um usuario cliente na empresa
-3. Cadastrar um usuario funcionario na mesma empresa
+1. Autenticar em `POST /login`
+2. Cadastrar uma empresa
+3. Cadastrar usuarios com perfis `ADMINISTRADOR`, `GERENTE`, `VENDEDOR` e `CLIENTE`
 4. Cadastrar mercadorias e servicos
-5. Registrar uma venda ligando empresa, cliente, funcionario, veiculo e itens
+5. Registrar uma venda ligando empresa, cliente, vendedor, veiculo e itens
+
+## Autenticacao
+
+### POST /login
+
+```http
+POST /login
+Content-Type: application/json
+```
+
+```json
+{
+  "nomeUsuario": "admin",
+  "senha": "senha123"
+}
+```
+
+Resposta esperada:
+
+- Status `200 OK`
+- Header `Authorization: Bearer <token>`
+
+Exemplo de uso nas proximas chamadas:
+
+```http
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9...
+```
 
 ## 1. Empresa
 
@@ -368,7 +396,7 @@ Atualizacao parcial dos campos principais:
   "nomeSocial": "Marina Oliveira Silva",
   "perfis": [
     "CLIENTE",
-    "FORNECEDOR"
+    "VENDEDOR"
   ]
 }
 ```
@@ -457,7 +485,7 @@ Todos os subrecursos seguem o padrao:
 }
 ```
 
-## 5. Usuario funcionario
+## 5. Usuario vendedor
 
 ### POST /empresas/1/usuarios
 
@@ -467,7 +495,7 @@ Todos os subrecursos seguem o padrao:
   "nomeSocial": "Carlos",
   "dataNascimento": "1988-11-21T00:00:00.000+00:00",
   "perfis": [
-    "FUNCIONARIO"
+    "VENDEDOR"
   ],
   "emails": [
     {
@@ -483,7 +511,7 @@ Todos os subrecursos seguem o padrao:
 }
 ```
 
-Use um funcionario quando a venda precisar de `funcionarioId`.
+Use um vendedor quando a venda precisar de `funcionarioId`.
 
 ## 6. Mercadoria
 

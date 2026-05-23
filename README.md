@@ -1,8 +1,8 @@
 ![Banner AutoBots](assets/bannerAutobots.png)
 
-O AutoBots é um sistema de gestão especializado para lojas de manutenção veicular e venda de autopeças. O projeto surge em um cenário de alta demanda e valorização do mercado de veículos usados no Brasil, onde a agilidade na gestão e a excelência no atendimento ao cliente tornaram-se diferenciais competitivos essenciais.
+O AutoBots e um sistema de gestao especializado para lojas de manutencao veicular e venda de autopecas.
 
-Nesta versão, o dominio legado centrado em `Cliente` foi substituido por um modelo mais amplo, com suporte a empresas, usuarios com perfis distintos, mercadorias, servicos, vendas e subrecursos relacionados. Todas as respostas principais seguem o estilo HATEOAS.
+Nesta versao, o dominio legado centrado em cliente foi substituido por um modelo mais amplo, com suporte a empresas, usuarios com perfis distintos, mercadorias, servicos, vendas e subrecursos relacionados. Todas as respostas principais seguem o estilo HATEOAS e a API agora exige autenticacao com JWT.
 
 ## Tecnologias
 
@@ -10,11 +10,12 @@ Nesta versão, o dominio legado centrado em `Cliente` foi substituido por um mod
 - Spring Boot 2.6.3
 - Spring Web
 - Spring Data JPA
+- Spring Security
 - Spring HATEOAS
 - Spring Validation
 - Maven
 - MySQL
-- H2 (suporte em runtime e testes)
+- H2 (runtime e testes)
 
 ## Requisitos para rodar
 
@@ -25,7 +26,7 @@ Nesta versão, o dominio legado centrado em `Cliente` foi substituido por um mod
 
 ## Como rodar o projeto
 
-### 1) Clonar o repositório
+### 1) Clonar o repositorio
 
 ```bash
 git clone https://github.com/SarahBatagioti/AV3-DWIII
@@ -39,22 +40,22 @@ cd AV3-DWIII/automanager
 
 ### 3) Configurar o banco MySQL
 
-As configurações ficam em `src/main/resources/application.properties`.
-
-Propriedades atuais:
+As configuracoes ficam em `src/main/resources/application.properties`.
 
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/AV3?createDatabaseIfNotExist=true&serverTimezone=UTC
 spring.datasource.username=root
 spring.datasource.password=fatec
 spring.jpa.hibernate.ddl-auto=update
+jwt.secret=AV4-DWIII-segredo-jwt-autobots
+jwt.expiration=600000
 ```
 
-Ajuste `username` e `password` conforme o seu ambiente.
+Ajuste `username`, `password` e `jwt.secret` conforme o seu ambiente.
 
-### 4) Rodar a aplicação
+### 4) Rodar a aplicacao
 
-No Windows (PowerShell/CMD):
+No Windows:
 
 ```bash
 mvnw.cmd spring-boot:run
@@ -66,17 +67,36 @@ No Linux/macOS/Git Bash:
 ./mvnw spring-boot:run
 ```
 
-Saída esperada:
+## Como autenticar
 
-- Aplicacao iniciada em `http://localhost:8080`
-- Banco `AV3` criado automaticamente (se não existir)
-- Um cliente de exemplo pode ser inserido automaticamente na primeira execução
+Antes de acessar as rotas protegidas, envie uma requisicao para `POST /login`:
 
-## Como testar os endpoints da API
+```json
+{
+  "nomeUsuario": "admin",
+  "senha": "senha123"
+}
+```
+
+A resposta devolve o token JWT no header `Authorization` no formato `Bearer <token>`.
+
+Use esse header nas proximas requisicoes:
+
+```http
+Authorization: Bearer <token>
+```
+
+## Perfis suportados
+
+- `ADMINISTRADOR`: CRUD total na aplicacao, incluindo usuarios administradores
+- `GERENTE`: CRUD sobre gerente, vendedor e cliente, alem de mercadorias, servicos e vendas
+- `VENDEDOR`: CRUD de clientes, leitura de mercadorias/servicos e criacao/leitura das proprias vendas
+- `CLIENTE`: leitura apenas do proprio cadastro e das proprias vendas
+
+## Como testar a API
 
 Para testar rapidamente pelo navegador, abra o Swagger em `http://localhost:8080/swagger-ui/index.html`, escolha o endpoint e clique em **Try it out**.
 
-Para ver exemplos prontos de todas as requisições, consulte o guia detalhado:
+Para ver exemplos prontos de requisicoes e do fluxo com autenticacao, consulte:
 
-👉 [Clique aqui para ver exemplos completos de todas as requisições](EXEMPLOS_API.md)
-
+[EXEMPLOS_API.md](EXEMPLOS_API.md)
