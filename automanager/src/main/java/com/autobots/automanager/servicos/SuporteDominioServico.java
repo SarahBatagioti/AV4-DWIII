@@ -207,6 +207,10 @@ public class SuporteDominioServico {
 		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.ADMINISTRADOR)) {
 			return;
 		}
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.CLIENTE)
+				&& usuarioAutenticado.getId().equals(usuario.getId())) {
+			return;
+		}
 		validarMesmoEmpresa(usuarioAutenticado, usuario);
 		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.GERENTE)) {
 			validarPerfisGerenciaveis(usuario.getPerfis(),
@@ -216,10 +220,6 @@ public class SuporteDominioServico {
 		}
 		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.VENDEDOR)) {
 			validarUsuarioSomenteCliente(usuario.getPerfis(), "Vendedor só pode acessar usuários clientes");
-			return;
-		}
-		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.CLIENTE)
-				&& usuarioAutenticado.getId().equals(usuario.getId())) {
 			return;
 		}
 		throw new AccessDeniedException("Usuário autenticado não pode acessar o cadastro informado");
@@ -304,6 +304,9 @@ public class SuporteDominioServico {
 
 	public void validarCriacaoVenda(Long funcionarioId) {
 		Usuario usuarioAutenticado = buscarUsuarioAutenticado();
+		if (funcionarioId == null) {
+			throw new AccessDeniedException("A venda deve informar o vendedor responsável");
+		}
 		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.ADMINISTRADOR)
 				|| usuarioAutenticado.getPerfis().contains(PerfilUsuario.GERENTE)) {
 			return;
