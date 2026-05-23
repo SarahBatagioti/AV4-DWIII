@@ -29,13 +29,13 @@ Nesta versao, o dominio legado centrado em cliente foi substituido por um modelo
 ### 1) Clonar o repositorio
 
 ```bash
-git clone https://github.com/SarahBatagioti/AV3-DWIII
+git clone https://github.com/SarahBatagioti/AV4-DWIII
 ```
 
 ### 2) Entrar na pasta do projeto
 
 ```bash
-cd AV3-DWIII/automanager
+cd AV4-DWIII/automanager
 ```
 
 ### 3) Configurar o banco MySQL
@@ -43,7 +43,7 @@ cd AV3-DWIII/automanager
 As configuracoes ficam em `src/main/resources/application.properties`.
 
 ```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/AV3?createDatabaseIfNotExist=true&serverTimezone=UTC
+spring.datasource.url=jdbc:mysql://localhost:3306/AV4?createDatabaseIfNotExist=true&serverTimezone=UTC
 spring.datasource.username=root
 spring.datasource.password=fatec
 spring.jpa.hibernate.ddl-auto=update
