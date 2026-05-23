@@ -83,7 +83,7 @@ public class VendaServico {
 		}
 		if (funcionarioId != null) {
 			Usuario funcionario = suporte.buscarUsuarioDaEmpresa(empresaId, funcionarioId);
-			suporte.validarPerfil(funcionario, PerfilUsuario.FUNCIONARIO);
+			suporte.validarPerfil(funcionario, PerfilUsuario.VENDEDOR);
 			venda.setFuncionario(funcionario);
 		}
 		if (veiculoId != null) {

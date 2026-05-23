@@ -197,7 +197,6 @@ public class SuporteDominioServico {
 			return Optional.empty();
 		}
 		Usuario fornecedor = buscarUsuarioDaEmpresa(empresaId, fornecedorId);
-		validarPerfil(fornecedor, PerfilUsuario.FORNECEDOR);
 		return Optional.of(fornecedor);
 	}
 }
