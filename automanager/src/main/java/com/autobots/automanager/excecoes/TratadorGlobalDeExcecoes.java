@@ -8,6 +8,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -61,6 +62,13 @@ public class TratadorGlobalDeExcecoes {
             DataIntegrityViolationException ex,
             HttpServletRequest request) {
         return responder(HttpStatus.CONFLICT, "Os dados informados entram em conflito com um registro existente", request);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiErroResposta> tratarAcessoNegado(
+            AccessDeniedException ex,
+            HttpServletRequest request) {
+        return responder(HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
     private String formatarErroDeCampo(FieldError erro) {

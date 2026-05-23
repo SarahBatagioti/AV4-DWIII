@@ -32,15 +32,18 @@ public class MercadoriaServico {
 	private SuporteDominioServico suporte;
 
 	public List<MercadoriaRespostaDTO> listarDaEmpresa(Long empresaId) {
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
 		return suporte.buscarEmpresa(empresaId).getMercadorias().stream().map(respostaMapper::paraMercadoria)
 				.collect(Collectors.toList());
 	}
 
 	public MercadoriaRespostaDTO buscarDaEmpresa(Long empresaId, Long mercadoriaId) {
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
 		return respostaMapper.paraMercadoria(suporte.buscarMercadoriaDaEmpresa(empresaId, mercadoriaId));
 	}
 
 	public MercadoriaRespostaDTO cadastrar(Long empresaId, MercadoriaCadastroDTO dto) {
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
 		Empresa empresa = suporte.buscarEmpresa(empresaId);
 		Mercadoria mercadoria = mercadoriaAtualizador.criar(dto);
 		mercadoria.setEmpresa(empresa);
@@ -49,6 +52,7 @@ public class MercadoriaServico {
 	}
 
 	public MercadoriaRespostaDTO atualizar(Long empresaId, Long mercadoriaId, MercadoriaAtualizacaoDTO dto) {
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
 		Mercadoria mercadoria = suporte.buscarMercadoriaDaEmpresa(empresaId, mercadoriaId);
 		mercadoriaAtualizador.atualizar(mercadoria, dto);
 		if (dto.getFornecedorId() != null) {
@@ -58,6 +62,7 @@ public class MercadoriaServico {
 	}
 
 	public void remover(Long empresaId, Long mercadoriaId) {
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
 		mercadoriaRepositorio.delete(suporte.buscarMercadoriaDaEmpresa(empresaId, mercadoriaId));
 	}
 }

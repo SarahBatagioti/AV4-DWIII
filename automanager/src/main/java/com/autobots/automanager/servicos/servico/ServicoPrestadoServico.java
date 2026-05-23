@@ -32,15 +32,18 @@ public class ServicoPrestadoServico {
 	private SuporteDominioServico suporte;
 
 	public List<ServicoRespostaDTO> listarDaEmpresa(Long empresaId) {
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
 		return suporte.buscarEmpresa(empresaId).getServicos().stream().map(respostaMapper::paraServico)
 				.collect(Collectors.toList());
 	}
 
 	public ServicoRespostaDTO buscarDaEmpresa(Long empresaId, Long servicoId) {
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
 		return respostaMapper.paraServico(suporte.buscarServicoDaEmpresa(empresaId, servicoId));
 	}
 
 	public ServicoRespostaDTO cadastrar(Long empresaId, ServicoCadastroDTO dto) {
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
 		Empresa empresa = suporte.buscarEmpresa(empresaId);
 		Servico servico = servicoAtualizador.criar(dto);
 		servico.setEmpresa(empresa);
@@ -48,12 +51,14 @@ public class ServicoPrestadoServico {
 	}
 
 	public ServicoRespostaDTO atualizar(Long empresaId, Long servicoId, ServicoAtualizacaoDTO dto) {
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
 		Servico servico = suporte.buscarServicoDaEmpresa(empresaId, servicoId);
 		servicoAtualizador.atualizar(servico, dto);
 		return respostaMapper.paraServico(servicoRepositorio.save(servico));
 	}
 
 	public void remover(Long empresaId, Long servicoId) {
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
 		servicoRepositorio.delete(suporte.buscarServicoDaEmpresa(empresaId, servicoId));
 	}
 }

@@ -102,20 +102,24 @@ public class UsuarioServico {
 	private SuporteDominioServico suporte;
 
 	public List<UsuarioRespostaDTO> listarDaEmpresa(Long empresaId) {
-		return suporte.buscarEmpresa(empresaId).getUsuarios().stream().sorted(Comparator.comparing(Usuario::getId))
-				.map(respostaMapper::paraUsuario).collect(Collectors.toList());
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
+		return suporte.buscarEmpresa(empresaId).getUsuarios().stream().filter(suporte::podeVisualizarUsuarioAutenticado)
+				.sorted(Comparator.comparing(Usuario::getId)).map(respostaMapper::paraUsuario)
+				.collect(Collectors.toList());
 	}
 
 	public UsuarioRespostaDTO buscarPorId(Long usuarioId) {
-		return respostaMapper.paraUsuario(suporte.buscarUsuario(usuarioId));
+		return respostaMapper.paraUsuario(buscarUsuarioComPermissaoDeLeitura(usuarioId));
 	}
 
 	public UsuarioRespostaDTO buscarDaEmpresa(Long empresaId, Long usuarioId) {
-		return respostaMapper.paraUsuario(suporte.buscarUsuarioDaEmpresa(empresaId, usuarioId));
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
+		return respostaMapper.paraUsuario(buscarUsuarioComPermissaoDeLeitura(usuarioId));
 	}
 
 	@Transactional
 	public UsuarioRespostaDTO cadastrar(Long empresaId, UsuarioCadastroDTO dto) {
+		suporte.validarCadastroUsuario(empresaId, dto.getPerfis());
 		Usuario usuario = usuarioAtualizador.criar(dto);
 		usuario.setEmpresa(suporte.buscarEmpresa(empresaId));
 		if (dto.getEndereco() != null) {
@@ -131,13 +135,14 @@ public class UsuarioServico {
 
 	@Transactional
 	public UsuarioRespostaDTO atualizar(Long empresaId, Long usuarioId, UsuarioAtualizacaoDTO dto) {
-		Usuario usuario = suporte.buscarUsuarioDaEmpresa(empresaId, usuarioId);
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
+		Usuario usuario = buscarUsuarioComPermissaoDeGerenciamento(usuarioId, dto.getPerfis());
 		return atualizarInterno(usuario, dto);
 	}
 
 	@Transactional
 	public UsuarioRespostaDTO atualizar(Long usuarioId, UsuarioAtualizacaoDTO dto) {
-		Usuario usuario = suporte.buscarUsuario(usuarioId);
+		Usuario usuario = buscarUsuarioComPermissaoDeGerenciamento(usuarioId, dto.getPerfis());
 		return atualizarInterno(usuario, dto);
 	}
 
@@ -154,15 +159,16 @@ public class UsuarioServico {
 	}
 
 	public void remover(Long empresaId, Long usuarioId) {
-		usuarioRepositorio.delete(suporte.buscarUsuarioDaEmpresa(empresaId, usuarioId));
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
+		usuarioRepositorio.delete(buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null));
 	}
 
 	public void remover(Long usuarioId) {
-		usuarioRepositorio.delete(suporte.buscarUsuario(usuarioId));
+		usuarioRepositorio.delete(buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null));
 	}
 
 	public EnderecoDTO buscarEndereco(Long usuarioId) {
-		Endereco endereco = suporte.buscarUsuario(usuarioId).getEndereco();
+		Endereco endereco = buscarUsuarioComPermissaoDeLeitura(usuarioId).getEndereco();
 		if (endereco == null) {
 			throw new RecursoNaoEncontradoException("Endereço não cadastrado para o usuário");
 		}
@@ -171,7 +177,7 @@ public class UsuarioServico {
 
 	@Transactional
 	public EnderecoDTO cadastrarEndereco(Long usuarioId, EnderecoDTO dto) {
-		Usuario usuario = suporte.buscarUsuario(usuarioId);
+		Usuario usuario = buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		if (usuario.getEndereco() != null) {
 			throw new ConflitoDeRecursoException("Usuário já possui endereço cadastrado");
 		}
@@ -182,7 +188,7 @@ public class UsuarioServico {
 
 	@Transactional
 	public EnderecoDTO atualizarEndereco(Long usuarioId, EnderecoDTO dto) {
-		Usuario usuario = suporte.buscarUsuario(usuarioId);
+		Usuario usuario = buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		if (usuario.getEndereco() == null) {
 			usuario.setEndereco(enderecoAtualizador.criar(dto));
 		} else {
@@ -194,7 +200,7 @@ public class UsuarioServico {
 
 	@Transactional
 	public void removerEndereco(Long usuarioId) {
-		Usuario usuario = suporte.buscarUsuario(usuarioId);
+		Usuario usuario = buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		if (usuario.getEndereco() == null) {
 			throw new RecursoNaoEncontradoException("Endereço não cadastrado para o usuário");
 		}
@@ -203,10 +209,11 @@ public class UsuarioServico {
 	}
 
 	public List<TelefoneDTO> listarTelefones(Long usuarioId) {
-		return respostaMapper.paraTelefones(suporte.buscarUsuario(usuarioId).getTelefones());
+		return respostaMapper.paraTelefones(buscarUsuarioComPermissaoDeLeitura(usuarioId).getTelefones());
 	}
 
 	public TelefoneDTO buscarTelefone(Long usuarioId, Long telefoneId) {
+		buscarUsuarioComPermissaoDeLeitura(usuarioId);
 		Telefone telefone = suporte.buscarTelefone(telefoneId);
 		suporte.validarTelefoneDoUsuario(usuarioId, telefone);
 		return respostaMapper.paraTelefone(telefone);
@@ -214,7 +221,7 @@ public class UsuarioServico {
 
 	@Transactional
 	public TelefoneDTO cadastrarTelefone(Long usuarioId, TelefoneDTO dto) {
-		Usuario usuario = suporte.buscarUsuario(usuarioId);
+		Usuario usuario = buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		Telefone telefone = telefoneAtualizador.criar(dto);
 		telefone.setUsuario(usuario);
 		return respostaMapper.paraTelefone(telefoneRepositorio.save(telefone));
@@ -222,6 +229,7 @@ public class UsuarioServico {
 
 	@Transactional
 	public TelefoneDTO atualizarTelefone(Long usuarioId, Long telefoneId, TelefoneDTO dto) {
+		buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		Telefone telefone = suporte.buscarTelefone(telefoneId);
 		suporte.validarTelefoneDoUsuario(usuarioId, telefone);
 		telefoneAtualizador.atualizar(telefone, dto);
@@ -229,16 +237,18 @@ public class UsuarioServico {
 	}
 
 	public void removerTelefone(Long usuarioId, Long telefoneId) {
+		buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		Telefone telefone = suporte.buscarTelefone(telefoneId);
 		suporte.validarTelefoneDoUsuario(usuarioId, telefone);
 		telefoneRepositorio.delete(telefone);
 	}
 
 	public List<DocumentoDTO> listarDocumentos(Long usuarioId) {
-		return respostaMapper.paraDocumentos(suporte.buscarUsuario(usuarioId).getDocumentos());
+		return respostaMapper.paraDocumentos(buscarUsuarioComPermissaoDeLeitura(usuarioId).getDocumentos());
 	}
 
 	public DocumentoDTO buscarDocumento(Long usuarioId, Long documentoId) {
+		buscarUsuarioComPermissaoDeLeitura(usuarioId);
 		Documento documento = suporte.buscarDocumento(documentoId);
 		suporte.validarDocumentoDoUsuario(usuarioId, documento);
 		return respostaMapper.paraDocumento(documento);
@@ -247,7 +257,7 @@ public class UsuarioServico {
 	@Transactional
 	public DocumentoDTO cadastrarDocumento(Long usuarioId, DocumentoDTO dto) {
 		validarNumeroDocumentoUnico(dto.getNumero(), null);
-		Usuario usuario = suporte.buscarUsuario(usuarioId);
+		Usuario usuario = buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		Documento documento = documentoAtualizador.criar(dto);
 		documento.setUsuario(usuario);
 		return respostaMapper.paraDocumento(documentoRepositorio.save(documento));
@@ -255,6 +265,7 @@ public class UsuarioServico {
 
 	@Transactional
 	public DocumentoDTO atualizarDocumento(Long usuarioId, Long documentoId, DocumentoDTO dto) {
+		buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		Documento documento = suporte.buscarDocumento(documentoId);
 		suporte.validarDocumentoDoUsuario(usuarioId, documento);
 		validarNumeroDocumentoUnico(dto.getNumero(), documentoId);
@@ -263,16 +274,18 @@ public class UsuarioServico {
 	}
 
 	public void removerDocumento(Long usuarioId, Long documentoId) {
+		buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		Documento documento = suporte.buscarDocumento(documentoId);
 		suporte.validarDocumentoDoUsuario(usuarioId, documento);
 		documentoRepositorio.delete(documento);
 	}
 
 	public List<EmailDTO> listarEmails(Long usuarioId) {
-		return respostaMapper.paraEmails(suporte.buscarUsuario(usuarioId).getEmails());
+		return respostaMapper.paraEmails(buscarUsuarioComPermissaoDeLeitura(usuarioId).getEmails());
 	}
 
 	public EmailDTO buscarEmail(Long usuarioId, Long emailId) {
+		buscarUsuarioComPermissaoDeLeitura(usuarioId);
 		Email email = suporte.buscarEmail(emailId);
 		suporte.validarEmailDoUsuario(usuarioId, email);
 		return respostaMapper.paraEmail(email);
@@ -280,7 +293,7 @@ public class UsuarioServico {
 
 	@Transactional
 	public EmailDTO cadastrarEmail(Long usuarioId, EmailDTO dto) {
-		Usuario usuario = suporte.buscarUsuario(usuarioId);
+		Usuario usuario = buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		Email email = emailAtualizador.criar(dto);
 		email.setUsuario(usuario);
 		return respostaMapper.paraEmail(emailRepositorio.save(email));
@@ -288,6 +301,7 @@ public class UsuarioServico {
 
 	@Transactional
 	public EmailDTO atualizarEmail(Long usuarioId, Long emailId, EmailDTO dto) {
+		buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		Email email = suporte.buscarEmail(emailId);
 		suporte.validarEmailDoUsuario(usuarioId, email);
 		emailAtualizador.atualizar(email, dto);
@@ -295,16 +309,18 @@ public class UsuarioServico {
 	}
 
 	public void removerEmail(Long usuarioId, Long emailId) {
+		buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		Email email = suporte.buscarEmail(emailId);
 		suporte.validarEmailDoUsuario(usuarioId, email);
 		emailRepositorio.delete(email);
 	}
 
 	public List<CredencialDTO> listarCredenciais(Long usuarioId) {
-		return respostaMapper.paraCredenciais(suporte.buscarUsuario(usuarioId).getCredenciais());
+		return respostaMapper.paraCredenciais(buscarUsuarioComPermissaoDeLeitura(usuarioId).getCredenciais());
 	}
 
 	public CredencialDTO buscarCredencial(Long usuarioId, Long credencialId) {
+		buscarUsuarioComPermissaoDeLeitura(usuarioId);
 		Credencial credencial = suporte.buscarCredencial(credencialId);
 		suporte.validarCredencialDoUsuario(usuarioId, credencial);
 		return respostaMapper.paraCredencial(credencial);
@@ -313,7 +329,7 @@ public class UsuarioServico {
 	@Transactional
 	public CredencialDTO cadastrarCredencial(Long usuarioId, CredencialDTO dto) {
 		validarCredencialUnica(dto, null);
-		Usuario usuario = suporte.buscarUsuario(usuarioId);
+		Usuario usuario = buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		Credencial credencial = credencialAtualizador.criar(dto);
 		credencial.setUsuario(usuario);
 		return respostaMapper.paraCredencial(credencialRepositorio.save(credencial));
@@ -321,6 +337,7 @@ public class UsuarioServico {
 
 	@Transactional
 	public CredencialDTO atualizarCredencial(Long usuarioId, Long credencialId, CredencialDTO dto) {
+		buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		Credencial credencial = suporte.buscarCredencial(credencialId);
 		suporte.validarCredencialDoUsuario(usuarioId, credencial);
 		if (!credencialAtualizador.mesmoTipo(credencial, dto.getTipo())) {
@@ -332,22 +349,24 @@ public class UsuarioServico {
 	}
 
 	public void removerCredencial(Long usuarioId, Long credencialId) {
+		buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		Credencial credencial = suporte.buscarCredencial(credencialId);
 		suporte.validarCredencialDoUsuario(usuarioId, credencial);
 		credencialRepositorio.delete(credencial);
 	}
 
 	public List<VeiculoDTO> listarVeiculos(Long usuarioId) {
-		return respostaMapper.paraVeiculos(suporte.buscarUsuario(usuarioId).getVeiculos());
+		return respostaMapper.paraVeiculos(buscarUsuarioComPermissaoDeLeitura(usuarioId).getVeiculos());
 	}
 
 	public VeiculoDTO buscarVeiculo(Long usuarioId, Long veiculoId) {
+		buscarUsuarioComPermissaoDeLeitura(usuarioId);
 		return respostaMapper.paraVeiculo(suporte.buscarVeiculoDoUsuario(usuarioId, veiculoId));
 	}
 
 	@Transactional
 	public VeiculoDTO cadastrarVeiculo(Long usuarioId, VeiculoDTO dto) {
-		Usuario usuario = suporte.buscarUsuario(usuarioId);
+		Usuario usuario = buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		suporte.validarPerfil(usuario, PerfilUsuario.CLIENTE);
 		Veiculo veiculo = veiculoAtualizador.criar(dto);
 		veiculo.setProprietario(usuario);
@@ -356,12 +375,14 @@ public class UsuarioServico {
 
 	@Transactional
 	public VeiculoDTO atualizarVeiculo(Long usuarioId, Long veiculoId, VeiculoDTO dto) {
+		buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		Veiculo veiculo = suporte.buscarVeiculoDoUsuario(usuarioId, veiculoId);
 		veiculoAtualizador.atualizar(veiculo, dto);
 		return respostaMapper.paraVeiculo(veiculoRepositorio.save(veiculo));
 	}
 
 	public void removerVeiculo(Long usuarioId, Long veiculoId) {
+		buscarUsuarioComPermissaoDeGerenciamento(usuarioId, null);
 		veiculoRepositorio.delete(suporte.buscarVeiculoDoUsuario(usuarioId, veiculoId));
 	}
 
@@ -446,5 +467,17 @@ public class UsuarioServico {
 				}
 			});
 		}
+	}
+
+	private Usuario buscarUsuarioComPermissaoDeLeitura(Long usuarioId) {
+		Usuario usuario = suporte.buscarUsuario(usuarioId);
+		suporte.validarLeituraUsuario(usuario);
+		return usuario;
+	}
+
+	private Usuario buscarUsuarioComPermissaoDeGerenciamento(Long usuarioId, Set<PerfilUsuario> novosPerfis) {
+		Usuario usuario = suporte.buscarUsuario(usuarioId);
+		suporte.validarGerenciamentoUsuario(usuario, novosPerfis);
+		return usuario;
 	}
 }

@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,6 +50,7 @@ public class UsuarioControle {
 	private UsuarioSubrecursoModelAssembler subrecursoAssembler;
 
 	@GetMapping("/empresas/{empresaId}/usuarios")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	@Operation(summary = "Listar usuários de uma empresa", description = "Retorna todos os usuários associados a uma empresa específica")
 	@ApiResponses(value = {
 		@ApiResponse(responseCode = "200", description = "Lista de usuários obtida com sucesso"),
@@ -59,6 +61,7 @@ public class UsuarioControle {
 	}
 
 	@PostMapping("/empresas/{empresaId}/usuarios")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<EntityModel<UsuarioRespostaDTO>> cadastrar(@PathVariable Long empresaId,
 			@Valid @RequestBody UsuarioCadastroDTO dto) {
 		UsuarioRespostaDTO usuario = servico.cadastrar(empresaId, dto);
@@ -68,28 +71,33 @@ public class UsuarioControle {
 	}
 
 	@GetMapping("/usuarios/{usuarioId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR','CLIENTE')")
 	public ResponseEntity<EntityModel<UsuarioRespostaDTO>> buscarPorId(@PathVariable Long usuarioId) {
 		return ResponseEntity.ok(assembler.toModel(servico.buscarPorId(usuarioId)));
 	}
 
 	@PutMapping("/usuarios/{usuarioId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<EntityModel<UsuarioRespostaDTO>> atualizar(@PathVariable Long usuarioId,
 			@Valid @RequestBody UsuarioAtualizacaoDTO dto) {
 		return ResponseEntity.ok(assembler.toModel(servico.atualizar(usuarioId, dto)));
 	}
 
 	@DeleteMapping("/usuarios/{usuarioId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<Void> remover(@PathVariable Long usuarioId) {
 		servico.remover(usuarioId);
 		return ResponseEntity.noContent().build();
 	}
 
 	@GetMapping("/usuarios/{usuarioId}/endereco")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR','CLIENTE')")
 	public ResponseEntity<EntityModel<EnderecoDTO>> buscarEndereco(@PathVariable Long usuarioId) {
 		return ResponseEntity.ok(subrecursoAssembler.toEnderecoModel(usuarioId, servico.buscarEndereco(usuarioId)));
 	}
 
 	@PostMapping("/usuarios/{usuarioId}/endereco")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<EntityModel<EnderecoDTO>> cadastrarEndereco(@PathVariable Long usuarioId,
 			@Valid @RequestBody EnderecoDTO dto) {
 		EnderecoDTO endereco = servico.cadastrarEndereco(usuarioId, dto);
@@ -98,29 +106,34 @@ public class UsuarioControle {
 	}
 
 	@PutMapping("/usuarios/{usuarioId}/endereco")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<EntityModel<EnderecoDTO>> atualizarEndereco(@PathVariable Long usuarioId,
 			@Valid @RequestBody EnderecoDTO dto) {
 		return ResponseEntity.ok(subrecursoAssembler.toEnderecoModel(usuarioId, servico.atualizarEndereco(usuarioId, dto)));
 	}
 
 	@DeleteMapping("/usuarios/{usuarioId}/endereco")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<Void> removerEndereco(@PathVariable Long usuarioId) {
 		servico.removerEndereco(usuarioId);
 		return ResponseEntity.noContent().build();
 	}
 
 	@GetMapping("/usuarios/{usuarioId}/telefones")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR','CLIENTE')")
 	public ResponseEntity<CollectionModel<EntityModel<TelefoneDTO>>> listarTelefones(@PathVariable Long usuarioId) {
 		return ResponseEntity.ok(subrecursoAssembler.toTelefoneCollectionModel(usuarioId, servico.listarTelefones(usuarioId)));
 	}
 
 	@GetMapping("/usuarios/{usuarioId}/telefones/{telefoneId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR','CLIENTE')")
 	public ResponseEntity<EntityModel<TelefoneDTO>> buscarTelefone(@PathVariable Long usuarioId,
 			@PathVariable Long telefoneId) {
 		return ResponseEntity.ok(subrecursoAssembler.toTelefoneModel(usuarioId, servico.buscarTelefone(usuarioId, telefoneId)));
 	}
 
 	@PostMapping("/usuarios/{usuarioId}/telefones")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<EntityModel<TelefoneDTO>> cadastrarTelefone(@PathVariable Long usuarioId,
 			@Valid @RequestBody TelefoneDTO dto) {
 		TelefoneDTO telefone = servico.cadastrarTelefone(usuarioId, dto);
@@ -130,29 +143,34 @@ public class UsuarioControle {
 	}
 
 	@PutMapping("/usuarios/{usuarioId}/telefones/{telefoneId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<EntityModel<TelefoneDTO>> atualizarTelefone(@PathVariable Long usuarioId,
 			@PathVariable Long telefoneId, @Valid @RequestBody TelefoneDTO dto) {
 		return ResponseEntity.ok(subrecursoAssembler.toTelefoneModel(usuarioId, servico.atualizarTelefone(usuarioId, telefoneId, dto)));
 	}
 
 	@DeleteMapping("/usuarios/{usuarioId}/telefones/{telefoneId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<Void> removerTelefone(@PathVariable Long usuarioId, @PathVariable Long telefoneId) {
 		servico.removerTelefone(usuarioId, telefoneId);
 		return ResponseEntity.noContent().build();
 	}
 
 	@GetMapping("/usuarios/{usuarioId}/documentos")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR','CLIENTE')")
 	public ResponseEntity<CollectionModel<EntityModel<DocumentoDTO>>> listarDocumentos(@PathVariable Long usuarioId) {
 		return ResponseEntity.ok(subrecursoAssembler.toDocumentoCollectionModel(usuarioId, servico.listarDocumentos(usuarioId)));
 	}
 
 	@GetMapping("/usuarios/{usuarioId}/documentos/{documentoId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR','CLIENTE')")
 	public ResponseEntity<EntityModel<DocumentoDTO>> buscarDocumento(@PathVariable Long usuarioId,
 			@PathVariable Long documentoId) {
 		return ResponseEntity.ok(subrecursoAssembler.toDocumentoModel(usuarioId, servico.buscarDocumento(usuarioId, documentoId)));
 	}
 
 	@PostMapping("/usuarios/{usuarioId}/documentos")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<EntityModel<DocumentoDTO>> cadastrarDocumento(@PathVariable Long usuarioId,
 			@Valid @RequestBody DocumentoDTO dto) {
 		DocumentoDTO documento = servico.cadastrarDocumento(usuarioId, dto);
@@ -162,28 +180,33 @@ public class UsuarioControle {
 	}
 
 	@PutMapping("/usuarios/{usuarioId}/documentos/{documentoId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<EntityModel<DocumentoDTO>> atualizarDocumento(@PathVariable Long usuarioId,
 			@PathVariable Long documentoId, @Valid @RequestBody DocumentoDTO dto) {
 		return ResponseEntity.ok(subrecursoAssembler.toDocumentoModel(usuarioId, servico.atualizarDocumento(usuarioId, documentoId, dto)));
 	}
 
 	@DeleteMapping("/usuarios/{usuarioId}/documentos/{documentoId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<Void> removerDocumento(@PathVariable Long usuarioId, @PathVariable Long documentoId) {
 		servico.removerDocumento(usuarioId, documentoId);
 		return ResponseEntity.noContent().build();
 	}
 
 	@GetMapping("/usuarios/{usuarioId}/emails")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR','CLIENTE')")
 	public ResponseEntity<CollectionModel<EntityModel<EmailDTO>>> listarEmails(@PathVariable Long usuarioId) {
 		return ResponseEntity.ok(subrecursoAssembler.toEmailCollectionModel(usuarioId, servico.listarEmails(usuarioId)));
 	}
 
 	@GetMapping("/usuarios/{usuarioId}/emails/{emailId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR','CLIENTE')")
 	public ResponseEntity<EntityModel<EmailDTO>> buscarEmail(@PathVariable Long usuarioId, @PathVariable Long emailId) {
 		return ResponseEntity.ok(subrecursoAssembler.toEmailModel(usuarioId, servico.buscarEmail(usuarioId, emailId)));
 	}
 
 	@PostMapping("/usuarios/{usuarioId}/emails")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<EntityModel<EmailDTO>> cadastrarEmail(@PathVariable Long usuarioId,
 			@Valid @RequestBody EmailDTO dto) {
 		EmailDTO email = servico.cadastrarEmail(usuarioId, dto);
@@ -193,29 +216,34 @@ public class UsuarioControle {
 	}
 
 	@PutMapping("/usuarios/{usuarioId}/emails/{emailId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<EntityModel<EmailDTO>> atualizarEmail(@PathVariable Long usuarioId,
 			@PathVariable Long emailId, @Valid @RequestBody EmailDTO dto) {
 		return ResponseEntity.ok(subrecursoAssembler.toEmailModel(usuarioId, servico.atualizarEmail(usuarioId, emailId, dto)));
 	}
 
 	@DeleteMapping("/usuarios/{usuarioId}/emails/{emailId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<Void> removerEmail(@PathVariable Long usuarioId, @PathVariable Long emailId) {
 		servico.removerEmail(usuarioId, emailId);
 		return ResponseEntity.noContent().build();
 	}
 
 	@GetMapping("/usuarios/{usuarioId}/credenciais")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR','CLIENTE')")
 	public ResponseEntity<CollectionModel<EntityModel<CredencialDTO>>> listarCredenciais(@PathVariable Long usuarioId) {
 		return ResponseEntity.ok(subrecursoAssembler.toCredencialCollectionModel(usuarioId, servico.listarCredenciais(usuarioId)));
 	}
 
 	@GetMapping("/usuarios/{usuarioId}/credenciais/{credencialId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR','CLIENTE')")
 	public ResponseEntity<EntityModel<CredencialDTO>> buscarCredencial(@PathVariable Long usuarioId,
 			@PathVariable Long credencialId) {
 		return ResponseEntity.ok(subrecursoAssembler.toCredencialModel(usuarioId, servico.buscarCredencial(usuarioId, credencialId)));
 	}
 
 	@PostMapping("/usuarios/{usuarioId}/credenciais")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<EntityModel<CredencialDTO>> cadastrarCredencial(@PathVariable Long usuarioId,
 			@Valid @RequestBody CredencialDTO dto) {
 		CredencialDTO credencial = servico.cadastrarCredencial(usuarioId, dto);
@@ -225,28 +253,33 @@ public class UsuarioControle {
 	}
 
 	@PutMapping("/usuarios/{usuarioId}/credenciais/{credencialId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<EntityModel<CredencialDTO>> atualizarCredencial(@PathVariable Long usuarioId,
 			@PathVariable Long credencialId, @Valid @RequestBody CredencialDTO dto) {
 		return ResponseEntity.ok(subrecursoAssembler.toCredencialModel(usuarioId, servico.atualizarCredencial(usuarioId, credencialId, dto)));
 	}
 
 	@DeleteMapping("/usuarios/{usuarioId}/credenciais/{credencialId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<Void> removerCredencial(@PathVariable Long usuarioId, @PathVariable Long credencialId) {
 		servico.removerCredencial(usuarioId, credencialId);
 		return ResponseEntity.noContent().build();
 	}
 
 	@GetMapping("/usuarios/{usuarioId}/veiculos")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR','CLIENTE')")
 	public ResponseEntity<CollectionModel<EntityModel<VeiculoDTO>>> listarVeiculos(@PathVariable Long usuarioId) {
 		return ResponseEntity.ok(subrecursoAssembler.toVeiculoCollectionModel(usuarioId, servico.listarVeiculos(usuarioId)));
 	}
 
 	@GetMapping("/usuarios/{usuarioId}/veiculos/{veiculoId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR','CLIENTE')")
 	public ResponseEntity<EntityModel<VeiculoDTO>> buscarVeiculo(@PathVariable Long usuarioId, @PathVariable Long veiculoId) {
 		return ResponseEntity.ok(subrecursoAssembler.toVeiculoModel(usuarioId, servico.buscarVeiculo(usuarioId, veiculoId)));
 	}
 
 	@PostMapping("/usuarios/{usuarioId}/veiculos")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<EntityModel<VeiculoDTO>> cadastrarVeiculo(@PathVariable Long usuarioId,
 			@Valid @RequestBody VeiculoDTO dto) {
 		VeiculoDTO veiculo = servico.cadastrarVeiculo(usuarioId, dto);
@@ -256,12 +289,14 @@ public class UsuarioControle {
 	}
 
 	@PutMapping("/usuarios/{usuarioId}/veiculos/{veiculoId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<EntityModel<VeiculoDTO>> atualizarVeiculo(@PathVariable Long usuarioId,
 			@PathVariable Long veiculoId, @Valid @RequestBody VeiculoDTO dto) {
 		return ResponseEntity.ok(subrecursoAssembler.toVeiculoModel(usuarioId, servico.atualizarVeiculo(usuarioId, veiculoId, dto)));
 	}
 
 	@DeleteMapping("/usuarios/{usuarioId}/veiculos/{veiculoId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<Void> removerVeiculo(@PathVariable Long usuarioId, @PathVariable Long veiculoId) {
 		servico.removerVeiculo(usuarioId, veiculoId);
 		return ResponseEntity.noContent().build();

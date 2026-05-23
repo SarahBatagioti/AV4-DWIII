@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,17 +39,20 @@ public class VendaControle {
 	private VendaModelAssembler assembler;
 
 	@GetMapping
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR','CLIENTE')")
 	public ResponseEntity<CollectionModel<EntityModel<VendaRespostaDTO>>> listar(@PathVariable Long empresaId) {
 		return ResponseEntity.ok(assembler.toCollectionModel(empresaId, servico.listarDaEmpresa(empresaId)));
 	}
 
 	@GetMapping("/{vendaId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR','CLIENTE')")
 	public ResponseEntity<EntityModel<VendaRespostaDTO>> buscarPorId(@PathVariable Long empresaId,
 			@PathVariable Long vendaId) {
 		return ResponseEntity.ok(assembler.toModel(servico.buscarDaEmpresa(empresaId, vendaId)));
 	}
 
 	@PostMapping
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<EntityModel<VendaRespostaDTO>> cadastrar(@PathVariable Long empresaId,
 			@Valid @RequestBody VendaCadastroDTO dto) {
 		VendaRespostaDTO venda = servico.cadastrar(empresaId, dto);
@@ -58,12 +62,14 @@ public class VendaControle {
 	}
 
 	@PutMapping("/{vendaId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE')")
 	public ResponseEntity<EntityModel<VendaRespostaDTO>> atualizar(@PathVariable Long empresaId,
 			@PathVariable Long vendaId, @Valid @RequestBody VendaAtualizacaoDTO dto) {
 		return ResponseEntity.ok(assembler.toModel(servico.atualizar(empresaId, vendaId, dto)));
 	}
 
 	@DeleteMapping("/{vendaId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE')")
 	public ResponseEntity<Void> remover(@PathVariable Long empresaId, @PathVariable Long vendaId) {
 		servico.remover(empresaId, vendaId);
 		return ResponseEntity.noContent().build();

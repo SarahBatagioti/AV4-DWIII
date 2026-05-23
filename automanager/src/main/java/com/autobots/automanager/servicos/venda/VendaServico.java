@@ -38,15 +38,22 @@ public class VendaServico {
 	private SuporteDominioServico suporte;
 
 	public List<VendaRespostaDTO> listarDaEmpresa(Long empresaId) {
-		return suporte.buscarEmpresa(empresaId).getVendas().stream().map(respostaMapper::paraVenda)
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
+		return suporte.buscarEmpresa(empresaId).getVendas().stream().filter(suporte::podeVisualizarVendaAutenticado)
+				.map(respostaMapper::paraVenda)
 				.collect(Collectors.toList());
 	}
 
 	public VendaRespostaDTO buscarDaEmpresa(Long empresaId, Long vendaId) {
-		return respostaMapper.paraVenda(suporte.buscarVendaDaEmpresa(empresaId, vendaId));
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
+		Venda venda = suporte.buscarVendaDaEmpresa(empresaId, vendaId);
+		suporte.validarVisualizacaoVenda(venda);
+		return respostaMapper.paraVenda(venda);
 	}
 
 	public VendaRespostaDTO cadastrar(Long empresaId, VendaCadastroDTO dto) {
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
+		suporte.validarCriacaoVenda(dto.getFuncionarioId());
 		validarIdentificacaoUnica(dto.getIdentificacao(), null);
 		Empresa empresa = suporte.buscarEmpresa(empresaId);
 		Venda venda = new Venda();
@@ -58,6 +65,7 @@ public class VendaServico {
 	}
 
 	public VendaRespostaDTO atualizar(Long empresaId, Long vendaId, VendaAtualizacaoDTO dto) {
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
 		Venda venda = suporte.buscarVendaDaEmpresa(empresaId, vendaId);
 		if (dto.getIdentificacao() != null) {
 			validarIdentificacaoUnica(dto.getIdentificacao(), vendaId);
@@ -68,6 +76,7 @@ public class VendaServico {
 	}
 
 	public void remover(Long empresaId, Long vendaId) {
+		suporte.validarEmpresaDoUsuarioAutenticado(empresaId);
 		vendaRepositorio.delete(suporte.buscarVendaDaEmpresa(empresaId, vendaId));
 	}
 

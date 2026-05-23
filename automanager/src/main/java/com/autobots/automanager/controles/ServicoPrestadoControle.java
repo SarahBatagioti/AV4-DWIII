@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,17 +39,20 @@ public class ServicoPrestadoControle {
 	private ServicoPrestadoModelAssembler assembler;
 
 	@GetMapping
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<CollectionModel<EntityModel<ServicoRespostaDTO>>> listar(@PathVariable Long empresaId) {
 		return ResponseEntity.ok(assembler.toCollectionModel(empresaId, servico.listarDaEmpresa(empresaId)));
 	}
 
 	@GetMapping("/{servicoId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')")
 	public ResponseEntity<EntityModel<ServicoRespostaDTO>> buscarPorId(@PathVariable Long empresaId,
 			@PathVariable Long servicoId) {
 		return ResponseEntity.ok(assembler.toModel(servico.buscarDaEmpresa(empresaId, servicoId)));
 	}
 
 	@PostMapping
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE')")
 	public ResponseEntity<EntityModel<ServicoRespostaDTO>> cadastrar(@PathVariable Long empresaId,
 			@Valid @RequestBody ServicoCadastroDTO dto) {
 		ServicoRespostaDTO servicoResposta = servico.cadastrar(empresaId, dto);
@@ -58,12 +62,14 @@ public class ServicoPrestadoControle {
 	}
 
 	@PutMapping("/{servicoId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE')")
 	public ResponseEntity<EntityModel<ServicoRespostaDTO>> atualizar(@PathVariable Long empresaId,
 			@PathVariable Long servicoId, @Valid @RequestBody ServicoAtualizacaoDTO dto) {
 		return ResponseEntity.ok(assembler.toModel(servico.atualizar(empresaId, servicoId, dto)));
 	}
 
 	@DeleteMapping("/{servicoId}")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE')")
 	public ResponseEntity<Void> remover(@PathVariable Long empresaId, @PathVariable Long servicoId) {
 		servico.remover(empresaId, servicoId);
 		return ResponseEntity.noContent().build();

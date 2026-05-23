@@ -1,8 +1,12 @@
 package com.autobots.automanager.servicos;
 
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.autobots.automanager.entidades.Credencial;
@@ -28,6 +32,7 @@ import com.autobots.automanager.repositorios.TelefoneRepositorio;
 import com.autobots.automanager.repositorios.UsuarioRepositorio;
 import com.autobots.automanager.repositorios.VeiculoRepositorio;
 import com.autobots.automanager.repositorios.VendaRepositorio;
+import com.autobots.automanager.servicos.autenticacao.AutenticacaoUsuarioServico;
 
 @Service
 public class SuporteDominioServico {
@@ -61,6 +66,9 @@ public class SuporteDominioServico {
 
 	@Autowired
 	private VendaRepositorio vendaRepositorio;
+
+	@Autowired
+	private AutenticacaoUsuarioServico autenticacaoUsuarioServico;
 
 	public Empresa buscarEmpresa(Long empresaId) {
 		return empresaRepositorio.findById(empresaId)
@@ -162,6 +170,151 @@ public class SuporteDominioServico {
 		}
 	}
 
+	public Usuario buscarUsuarioAutenticado() {
+		Authentication autenticacao = SecurityContextHolder.getContext().getAuthentication();
+		if (autenticacao == null || !autenticacao.isAuthenticated() || autenticacao.getName() == null
+				|| "anonymousUser".equalsIgnoreCase(autenticacao.getName())) {
+			throw new AccessDeniedException("Autenticação obrigatória");
+		}
+		return autenticacaoUsuarioServico.buscarUsuarioAtivoPorNomeUsuario(autenticacao.getName());
+	}
+
+	public boolean usuarioAutenticadoPossuiPerfil(PerfilUsuario perfil) {
+		return buscarUsuarioAutenticado().getPerfis().contains(perfil);
+	}
+
+	public void validarEmpresaDoUsuarioAutenticado(Long empresaId) {
+		if (usuarioAutenticadoPossuiPerfil(PerfilUsuario.ADMINISTRADOR)) {
+			return;
+		}
+		Usuario usuarioAutenticado = buscarUsuarioAutenticado();
+		if (usuarioAutenticado.getEmpresa() == null || !usuarioAutenticado.getEmpresa().getId().equals(empresaId)) {
+			throw new AccessDeniedException("Usuário autenticado não pertence à empresa informada");
+		}
+	}
+
+	public boolean podeVisualizarUsuarioAutenticado(Usuario usuario) {
+		try {
+			validarLeituraUsuario(usuario);
+			return true;
+		} catch (AccessDeniedException ex) {
+			return false;
+		}
+	}
+
+	public void validarLeituraUsuario(Usuario usuario) {
+		Usuario usuarioAutenticado = buscarUsuarioAutenticado();
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.ADMINISTRADOR)) {
+			return;
+		}
+		validarMesmoEmpresa(usuarioAutenticado, usuario);
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.GERENTE)) {
+			validarPerfisGerenciaveis(usuario.getPerfis(),
+					Set.of(PerfilUsuario.GERENTE, PerfilUsuario.VENDEDOR, PerfilUsuario.CLIENTE),
+					"Gerente não pode acessar usuários administradores");
+			return;
+		}
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.VENDEDOR)) {
+			validarUsuarioSomenteCliente(usuario.getPerfis(), "Vendedor só pode acessar usuários clientes");
+			return;
+		}
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.CLIENTE)
+				&& usuarioAutenticado.getId().equals(usuario.getId())) {
+			return;
+		}
+		throw new AccessDeniedException("Usuário autenticado não pode acessar o cadastro informado");
+	}
+
+	public void validarCadastroUsuario(Long empresaId, Set<PerfilUsuario> perfis) {
+		validarEmpresaDoUsuarioAutenticado(empresaId);
+		Usuario usuarioAutenticado = buscarUsuarioAutenticado();
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.ADMINISTRADOR)) {
+			return;
+		}
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.GERENTE)) {
+			validarPerfisGerenciaveis(perfis,
+					Set.of(PerfilUsuario.GERENTE, PerfilUsuario.VENDEDOR, PerfilUsuario.CLIENTE),
+					"Gerente não pode cadastrar usuários administradores");
+			return;
+		}
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.VENDEDOR)) {
+			validarUsuarioSomenteCliente(perfis, "Vendedor só pode cadastrar usuários clientes");
+			return;
+		}
+		throw new AccessDeniedException("Usuário autenticado não pode cadastrar usuários");
+	}
+
+	public void validarGerenciamentoUsuario(Usuario usuario, Set<PerfilUsuario> novosPerfis) {
+		Usuario usuarioAutenticado = buscarUsuarioAutenticado();
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.ADMINISTRADOR)) {
+			return;
+		}
+		validarMesmoEmpresa(usuarioAutenticado, usuario);
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.GERENTE)) {
+			validarPerfisGerenciaveis(usuario.getPerfis(),
+					Set.of(PerfilUsuario.GERENTE, PerfilUsuario.VENDEDOR, PerfilUsuario.CLIENTE),
+					"Gerente não pode alterar usuários administradores");
+			if (novosPerfis != null && !novosPerfis.isEmpty()) {
+				validarPerfisGerenciaveis(novosPerfis,
+						Set.of(PerfilUsuario.GERENTE, PerfilUsuario.VENDEDOR, PerfilUsuario.CLIENTE),
+						"Gerente não pode atribuir perfil administrador");
+			}
+			return;
+		}
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.VENDEDOR)) {
+			validarUsuarioSomenteCliente(usuario.getPerfis(), "Vendedor só pode alterar usuários clientes");
+			if (novosPerfis != null && !novosPerfis.isEmpty()) {
+				validarUsuarioSomenteCliente(novosPerfis, "Vendedor só pode manter o perfil cliente");
+			}
+			return;
+		}
+		throw new AccessDeniedException("Usuário autenticado não pode alterar o cadastro informado");
+	}
+
+	public boolean podeVisualizarVendaAutenticado(Venda venda) {
+		try {
+			validarVisualizacaoVenda(venda);
+			return true;
+		} catch (AccessDeniedException ex) {
+			return false;
+		}
+	}
+
+	public void validarVisualizacaoVenda(Venda venda) {
+		Usuario usuarioAutenticado = buscarUsuarioAutenticado();
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.ADMINISTRADOR)) {
+			return;
+		}
+		validarEmpresaDoUsuarioAutenticado(venda.getEmpresa().getId());
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.GERENTE)) {
+			return;
+		}
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.VENDEDOR)
+				&& venda.getFuncionario() != null
+				&& usuarioAutenticado.getId().equals(venda.getFuncionario().getId())) {
+			return;
+		}
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.CLIENTE)
+				&& venda.getCliente() != null
+				&& usuarioAutenticado.getId().equals(venda.getCliente().getId())) {
+			return;
+		}
+		throw new AccessDeniedException("Usuário autenticado não pode acessar a venda informada");
+	}
+
+	public void validarCriacaoVenda(Long funcionarioId) {
+		Usuario usuarioAutenticado = buscarUsuarioAutenticado();
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.ADMINISTRADOR)
+				|| usuarioAutenticado.getPerfis().contains(PerfilUsuario.GERENTE)) {
+			return;
+		}
+		if (usuarioAutenticado.getPerfis().contains(PerfilUsuario.VENDEDOR)
+				&& usuarioAutenticado.getId().equals(funcionarioId)) {
+			return;
+		}
+		throw new AccessDeniedException("Vendedor só pode criar vendas feitas por si mesmo");
+	}
+
 	public void validarDocumentoDoUsuario(Long usuarioId, Documento documento) {
 		if (documento.getUsuario() == null || !documento.getUsuario().getId().equals(usuarioId)) {
 			throw new RecursoNaoEncontradoException("Documento não encontrado para o usuário informado");
@@ -198,5 +351,24 @@ public class SuporteDominioServico {
 		}
 		Usuario fornecedor = buscarUsuarioDaEmpresa(empresaId, fornecedorId);
 		return Optional.of(fornecedor);
+	}
+
+	private void validarMesmoEmpresa(Usuario usuarioAutenticado, Usuario usuarioAlvo) {
+		if (usuarioAutenticado.getEmpresa() == null || usuarioAlvo.getEmpresa() == null
+				|| !usuarioAutenticado.getEmpresa().getId().equals(usuarioAlvo.getEmpresa().getId())) {
+			throw new AccessDeniedException("Usuário autenticado não pertence à mesma empresa do cadastro informado");
+		}
+	}
+
+	private void validarPerfisGerenciaveis(Set<PerfilUsuario> perfis, Set<PerfilUsuario> permitidos, String mensagem) {
+		if (perfis == null || perfis.isEmpty() || !permitidos.containsAll(perfis)) {
+			throw new AccessDeniedException(mensagem);
+		}
+	}
+
+	private void validarUsuarioSomenteCliente(Set<PerfilUsuario> perfis, String mensagem) {
+		if (perfis == null || perfis.size() != 1 || !perfis.contains(PerfilUsuario.CLIENTE)) {
+			throw new AccessDeniedException(mensagem);
+		}
 	}
 }
