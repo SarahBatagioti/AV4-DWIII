@@ -2,6 +2,8 @@ package com.autobots.automanager.modelo.atualizadores.credencial;
 
 import java.util.Date;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.autobots.automanager.entidades.Credencial;
@@ -12,6 +14,9 @@ import com.autobots.automanager.modelo.dto.credencial.CredencialDTO;
 
 @Component
 public class CredencialAtualizador {
+
+	@Autowired
+	private PasswordEncoder passwordEncoder;
 
 	public Credencial criar(CredencialDTO dto) {
 		Credencial credencial = novaInstancia(dto.getTipo());
@@ -37,7 +42,7 @@ public class CredencialAtualizador {
 				atual.setNomeUsuario(dto.getNomeUsuario());
 			}
 			if (dto.getSenha() != null) {
-				atual.setSenha(dto.getSenha());
+				atual.setSenha(passwordEncoder.encode(dto.getSenha()));
 			}
 			return;
 		}

@@ -158,7 +158,6 @@ public class RespostaMapper {
 			CredencialUsuarioSenha atual = (CredencialUsuarioSenha) credencial;
 			dto.setTipo("usuario-senha");
 			dto.setNomeUsuario(atual.getNomeUsuario());
-			dto.setSenha(atual.getSenha());
 		} else if (credencial instanceof CredencialCodigoBarra) {
 			CredencialCodigoBarra atual = (CredencialCodigoBarra) credencial;
 			dto.setTipo("codigo-barra");
