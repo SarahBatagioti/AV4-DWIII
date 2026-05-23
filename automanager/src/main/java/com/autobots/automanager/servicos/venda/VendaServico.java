@@ -91,9 +91,9 @@ public class VendaServico {
 			venda.setCliente(cliente);
 		}
 		if (funcionarioId != null) {
-			Usuario funcionario = suporte.buscarUsuarioDaEmpresa(empresaId, funcionarioId);
-			suporte.validarPerfil(funcionario, PerfilUsuario.VENDEDOR);
-			venda.setFuncionario(funcionario);
+			Usuario vendedor = suporte.buscarUsuarioDaEmpresa(empresaId, funcionarioId);
+			suporte.validarPerfil(vendedor, PerfilUsuario.VENDEDOR);
+			venda.setFuncionario(vendedor);
 		}
 		if (veiculoId != null) {
 			Veiculo veiculo = suporte.buscarVeiculo(veiculoId);
